@@ -36,18 +36,17 @@ Estos resultados funcionales no demuestran una mejora de calidad causada por la 
 | Modelo | Corrida | Modo | Mediana tok/s | Pruebas funcionales |
 |---|---|---|---:|---:|
 | Ornith-1.5-9B-heretic | `ornith_ttl_repeat_20261023_023418` | Base | 79.20 (5 respuestas TTL) | No registradas |
-| Qwen3.8-9B-Distill | `qwen38_mtp_20261023_025031` | Base / MTP4 / Ngram16 | 127.99 / 125.77 / 127.98 | No registradas |
-| Qwen3.8-9B-Distill | `qwen38_mtp_20261023_025325` | Base / MTP4 / Ngram16 | 128.21 / 126.38 / 129.68 | 36/72 en los tres modos |
+| Qwen3.8-9B-Distill | `qwen38_mtp_20261023_025031` | Base / MTP4 / Ngram16 | 127.99 / 125.77 / 127.98 | 36/72 en los tres modos; evaluado después sobre el código guardado |
 
-Las dos corridas posteriores de Qwen3.8 son más rápidas que la primera incluso en `Base`. Se conservan por separado; no se atribuye esa diferencia a MTP4 ni a Ngram16. La repetición TTL de Ornith tiene solo cinco respuestas, todas con 4096 tokens máximos o próximos a ese límite, y no es comparable con las corridas de 15 respuestas.
+La corrida posterior válida de Qwen3.8 es más rápida que la primera incluso en `Base`. Se conserva por separado; no se atribuye esa diferencia a MTP4 ni a Ngram16. La corrida `qwen38_mtp_20261023_025325` se inició por error al intentar generar el reporte funcional: queda excluida de las tablas y CSV publicados como benchmark. Para completar el reporte correcto se ejecutó el evaluador funcional sobre los 45 archivos de código ya guardados en `qwen38_mtp_20261023_025031`, sin volver a generar respuestas. La repetición TTL de Ornith tiene solo cinco respuestas, todas de 4096 tokens, y no es comparable con las corridas de 15 respuestas.
 
 ## Método y archivos
 
 - Los prompts, en español, pidieron código Python 3.12 para una caché LRU, una caché TTL, Dijkstra, un parser CSV y un planificador de tareas. Se solicitaron solo código, sin explicaciones ni Markdown.
 - En los scripts conservados de Gemma, Saluki, Ornith y Qwen3.8 se usó `llama-server` en `127.0.0.1:8080`, un slot (`-np 1`), contexto de 16 384 (`-c 16384`), 99 capas GPU (`-ngl 99`), Flash Attention, `temperature: 0`, `max_tokens: 4096`, `stream: false` y tres repeticiones por problema. `Ngram16` usó `--spec-type ngram-simple --spec-draft-n-max 16`. La corrida posterior de Qwen3.8 usó `MTP4` con `--spec-type draft-mtp --spec-draft-n-max 4 --spec-draft-p-min 0.75`.
-- [`measurements.csv`](measurements.csv) normaliza las 260 filas de ocho archivos `results.csv`, incluyendo las corridas complementarias. `tokens_per_second` procede de los tiempos de generación informados por `llama-server`; `wall_time_ms` es tiempo de solicitud medido por el cliente. `generation_ms` conserva `GenerationMs` en la primera corrida y `predicted_ms` en las demás.
-- [`functional_summary.csv`](functional_summary.csv) reúne las 70 filas disponibles de seis resúmenes funcionales. Las pruebas se ejecutaron en subprocesos con límite de cinco segundos por caso. Un archivo de respuestas generado se sometió a varios casos; esos casos comparten la misma respuesta y no son observaciones independientes.
-- [`source_hashes.json`](source_hashes.json) registra SHA-256 de los 14 CSV originales usados. Las tablas aquí son derivados; los archivos originales no se modificaron.
+- [`measurements.csv`](measurements.csv) normaliza las 215 filas de siete archivos `results.csv`, excluyendo la corrida accidental. `tokens_per_second` procede de los tiempos de generación informados por `llama-server`; `wall_time_ms` es tiempo de solicitud medido por el cliente. `generation_ms` conserva `GenerationMs` en la primera corrida y `predicted_ms` en las demás.
+- [`functional_summary.csv`](functional_summary.csv) reúne 70 filas: cinco resúmenes originales y el resumen nuevo calculado sobre el código guardado de `qwen38_mtp_20261023_025031`. Para ese cálculo se usó [`functional_benchmark.py`](functional_benchmark.py) con `BENCH_RESULTS` apuntando a una copia de los 45 archivos `.py` de esa corrida. Las pruebas se ejecutaron en subprocesos con límite de cinco segundos por caso. Un archivo de respuestas generado se sometió a varios casos; esos casos comparten la misma respuesta y no son observaciones independientes.
+- [`source_hashes.json`](source_hashes.json) registra SHA-256 de los 12 CSV originales usados, del resumen funcional derivado (`origin: derived_from_saved_code`) y del evaluador. Los archivos originales no se modificaron.
 
 ## Límites de interpretación y reproducción
 
@@ -56,4 +55,5 @@ Las dos corridas posteriores de Qwen3.8 son más rápidas que la primera incluso
 3. Los 15 resultados por modo son solo tres respuestas por problema, con orden fijo y posibles efectos de calentamiento, caché y variación del sistema. No hay intervalos de confianza ni control de esos factores.
 4. El número de tokens generados varía entre modos. Compare velocidad y tiempo de pared junto con el largo de salida en `measurements.csv`; no trate tokens/s como una medida completa de productividad o calidad.
 5. El conjunto funcional es estrecho. Un `OK` de la API no implica código correcto, y aprobar estos casos tampoco garantiza corrección general. Los resúmenes no incluyen el código generado ni los mensajes de error completos.
-6. No se han repetido los modelos para esta publicación. Los CSV reflejan únicamente las corridas guardadas el 23 de octubre de 2026.
+6. No se han repetido los modelos para esta publicación. Solo se ejecutó la evaluación funcional pendiente sobre las respuestas ya guardadas de Qwen3.8. Los tiempos reflejan únicamente las corridas guardadas el 23 de octubre de 2026.
+7. El resumen funcional nuevo se calculó con la versión disponible de `functional_benchmark.py`; no hay un snapshot del evaluador asociado a cada resumen anterior. La equivalencia exacta de las pruebas funcionales entre fechas de ejecución no está verificada.
